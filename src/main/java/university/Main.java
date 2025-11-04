@@ -10,21 +10,23 @@ public class Main {
 
         while (true) {
             System.out.println("""
-                   1) Добавить студента
-                   2) Добавить преподавателя
-                   3) Создать курс
-                   4) Назначить преподавателя на курс
-                   5) Записать студента на курс
-                   6) Отчислить студента с курса
-                   7) Поставить оценку
-                   8) Список курсов студента + GPA
-                   9) Состав группы курса
-                   10) Курсы преподавателя
-                   11) Найти студента/курс по части имени
-                   12) Удалить курс
-                    0) Выход
-                    >\s
-                   """);
+                    1) Добавить студента
+                    2) Добавить преподавателя
+                    3) Создать курс
+                    4) Назначить преподавателя на курс
+                    5) Записать студента на курс
+                    6) Отчислить студента с курса
+                    7) Поставить оценку
+                    8) Список курсов студента + GPA
+                    9) Состав группы курса
+                    10) Курсы преподавателя
+                    11) Найти студента/курс по части имени
+                    12) Удалить курс
+                    13) Сохранить в JSON
+                    14) Загрузить из JSON
+                     0) Выход
+                     >\s
+                    """);
 
             String choice = in.nextLine().trim();
             try {
@@ -117,6 +119,20 @@ public class Main {
                         UUID courseId = UUID.fromString(in.nextLine().trim());
                         reg.removeCourse(courseId);
                         System.out.println("Курс удалён.");
+                    }
+
+                    case "13" -> {
+                        System.out.print("Путь к файлу (например, data.json): ");
+                        var p = java.nio.file.Path.of(in.nextLine().trim());
+                        reg.saveToJson(p);
+                        System.out.println("Сохранено: " + p.toAbsolutePath());
+                    }
+
+                    case "14" -> {
+                        System.out.print("Путь к файлу: ");
+                        var p = java.nio.file.Path.of(in.nextLine().trim());
+                        reg.loadFromJson(p);
+                        System.out.println("Загружено из: " + p.toAbsolutePath());
                     }
 
                     case "0" -> {

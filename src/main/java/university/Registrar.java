@@ -1,6 +1,7 @@
 package university;
 
 import java.util.*;
+import java.nio.file.Path;
 
 public class Registrar {
     private final Map<UUID, Student> students = new LinkedHashMap<>();
@@ -105,7 +106,7 @@ public class Registrar {
 
             if (e.getGrade().isPresent()) {
                 totalCredits += c.getCredits();
-                totalPoints  += c.getCredits() * e.getGrade().get().points();
+                totalPoints += c.getCredits() * e.getGrade().get().points();
             }
         }
 
@@ -117,7 +118,10 @@ public class Registrar {
         Course c = getCourse(courseId);
         System.out.println("Курс: " + c);
         c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + professors.get(pid)));
-        if (c.getEnrollmentIds().isEmpty()) { System.out.println("Группа пуста."); return; }
+        if (c.getEnrollmentIds().isEmpty()) {
+            System.out.println("Группа пуста.");
+            return;
+        }
         for (UUID enrId : c.getEnrollmentIds()) {
             Enrollment e = enrollments.get(enrId);
             System.out.println(" - " + students.get(e.getStudentId()));
@@ -127,7 +131,10 @@ public class Registrar {
     public void printProfessorCourses(UUID profId) {
         Professor p = getProfessor(profId);
         System.out.println("Преподаватель: " + p);
-        if (p.getCourseIds().isEmpty()) { System.out.println("Курсов нет."); return; }
+        if (p.getCourseIds().isEmpty()) {
+            System.out.println("Курсов нет.");
+            return;
+        }
         for (UUID cid : p.getCourseIds()) System.out.println(" - " + courses.get(cid));
     }
 
@@ -147,7 +154,118 @@ public class Registrar {
                 .findFirst();
     }
 
-    private Student   getStudent(UUID id){ var s = students.get(id);   if (s==null) throw new IllegalArgumentException("student not found");   return s; }
-    private Professor getProfessor(UUID id){ var p = professors.get(id); if (p==null) throw new IllegalArgumentException("professor not found"); return p; }
-    private Course    getCourse(UUID id){ var c = courses.get(id);    if (c==null) throw new IllegalArgumentException("course not found");    return c; }
+    private Student getStudent(UUID id) {
+        var s = students.get(id);
+        if (s == null) throw new IllegalArgumentException("student not found");
+        return s;
+    }
+
+    private Professor getProfessor(UUID id) {
+        var p = professors.get(id);
+        if (p == null) throw new IllegalArgumentException("professor not found");
+        return p;
+    }
+
+    private Course getCourse(UUID id) {
+        var c = courses.get(id);
+        if (c == null) throw new IllegalArgumentException("course not found");
+        return c;
+    }
+
+    //Save and Load
+    public void saveToJson(Path path) {
+        Snapshot snap = new Snapshot();
+
+        // students
+        for (var s : students.values()) {
+            var ss = new Snapshot.StudentSnap();
+            ss.id = s.getId();
+            ss.name = s.getName();
+            ss.enrollmentIds = new ArrayList<>(s.getEnrollmentIds());
+            snap.students.add(ss);
+        }
+
+        // professors
+        for (var p : professors.values()) {
+            var ps = new Snapshot.ProfessorSnap();
+            ps.id = p.getId();
+            ps.name = p.getName();
+            ps.courseIds = new ArrayList<>(p.getCourseIds());
+            snap.professors.add(ps);
+        }
+
+        // courses
+        for (var c : courses.values()) {
+            var cs = new Snapshot.CourseSnap();
+            cs.id = c.getId();
+            cs.title = c.getTitle();
+            cs.credits = c.getCredits();
+            cs.professorId = c.getProfessorId().orElse(null);
+            cs.enrollmentIds = new ArrayList<>(c.getEnrollmentIds());
+            snap.courses.add(cs);
+        }
+
+        // enrollments
+        for (var e : enrollments.values()) {
+            var es = new Snapshot.EnrollmentSnap();
+            es.id = e.getId();
+            es.studentId = e.getStudentId();
+            es.courseId = e.getCourseId();
+            es.credits = e.getCredits();
+            es.grade = e.getGrade().map(Enum::name).orElse(null);
+            snap.enrollments.add(es);
+        }
+
+        new JsonStore().save(path, snap);
+    }
+
+    public void loadFromJson(Path path) {
+        Snapshot snap = new JsonStore().load(path);
+
+        // очистим текущее состояние
+        students.clear();
+        professors.clear();
+        courses.clear();
+        enrollments.clear();
+
+        // восстановление студентов
+        for (var ss : snap.students) {
+            var s = new Student(ss.id, ss.name);
+            // enrollments добавим позже, когда они будут загружены
+            students.put(s.getId(), s);
+        }
+
+        // преподаватели
+        for (var ps : snap.professors) {
+            var p = new Professor(ps.id, ps.name);
+            professors.put(p.getId(), p);
+        }
+
+        // курсы
+        for (var cs : snap.courses) {
+            var c = new Course(cs.id, cs.title, cs.credits, cs.professorId);
+            courses.put(c.getId(), c);
+        }
+
+        // зачисления
+        for (var es : snap.enrollments) {
+            Grade g = es.grade == null ? null : Grade.valueOf(es.grade);
+            var e = new Enrollment(es.id, es.studentId, es.courseId, es.credits, g);
+            enrollments.put(e.getId(), e);
+        }
+
+        // восстановим обратные связи (составы групп и списки курсов/зачислений)
+        snap.courses.forEach(cs -> {
+            var c = courses.get(cs.id);
+            cs.enrollmentIds.forEach(c::addEnrollment);
+        });
+        snap.professors.forEach(ps -> {
+            var p = professors.get(ps.id);
+            ps.courseIds.forEach(p::assignCourse);
+        });
+        snap.students.forEach(ss -> {
+            var s = students.get(ss.id);
+            ss.enrollmentIds.forEach(s::addEnrollment);
+        });
+    }
 }
