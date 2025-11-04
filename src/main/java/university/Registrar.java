@@ -87,7 +87,7 @@ public class Registrar {
     }
 
     // Отчёты/вывод
-    public void printTranscript(UUID studentId) {  // ACTION
+    public void printTranscript(UUID studentId) {                                   // ACTION
         Student s = getStudent(studentId);
         System.out.println("Студент: " + s);
 
@@ -105,7 +105,7 @@ public class Registrar {
         System.out.printf("GPA: %.2f%n", gpa);
     }
 
-    public void printRoster(UUID courseId) {       // ACTION
+    public void printRoster(UUID courseId) {                                        // ACTION
         Course c = getCourse(courseId);
         System.out.println("Курс: " + c);
         c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + professors.get(pid)));
@@ -122,27 +122,36 @@ public class Registrar {
         }
     }
 
-
     public void printProfessorCourses(UUID profId) {                                // ACTION
         Professor p = getProfessor(profId);
         System.out.println("Преподаватель: " + p);
-        if (p.getCourseIds().isEmpty()) {
+
+        List<Course> list = Calculations.coursesOfProfessor(p, courses);
+
+        if (list.isEmpty()) {
             System.out.println("Курсов нет.");
             return;
         }
-        for (UUID cid : p.getCourseIds()) System.out.println(" - " + courses.get(cid));
+
+        for (Course c : list) {
+            System.out.println(" - " + c);
+        }
     }
 
     public void search(String query) {                                              // ACTION
-        String q = query.toLowerCase();
+        List<Student> st = Calculations.searchStudents(query, students.values());
+        List<Course>  cs = Calculations.searchCourses(query,  courses.values());
+
         System.out.println("Студенты:");
-        students.values().stream().filter(s -> s.getName().toLowerCase().contains(q)).forEach(s -> System.out.println(" - " + s));
+        if (st.isEmpty()) System.out.println(" - не найдено");
+        else st.forEach(s -> System.out.println(" - " + s));
+
         System.out.println("Курсы:");
-        courses.values().stream().filter(c -> c.getTitle().toLowerCase().contains(q)).forEach(c -> System.out.println(" - " + c));
+        if (cs.isEmpty()) System.out.println(" - не найдено");
+        else cs.forEach(c -> System.out.println(" - " + c));
     }
 
     // Вспомогательные
-
     private Optional<Enrollment> findEnrollment(UUID studentId, UUID courseId) {    // CALCULATION
         return enrollments.values().stream()
                 .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))

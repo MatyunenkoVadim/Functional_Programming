@@ -66,4 +66,37 @@ public final class Calculations {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+
+    // Список курсов преподавателя
+    public static List<Course> coursesOfProfessor(
+            Professor professor,
+            Map<UUID, Course> courseById
+    ) {
+        List<Course> result = new ArrayList<>();
+        for (UUID cid : professor.getCourseIds()) {
+            Course c = courseById.get(cid);
+            if (c != null) result.add(c);
+        }
+        return result;
+    }
+
+    // Поиск студентов по подстроке (без учёта регистра)
+    public static List<Student> searchStudents(String query, Collection<Student> students) {
+        String q = query.toLowerCase();
+        List<Student> out = new ArrayList<>();
+        for (Student s : students) {
+            if (s.getName().toLowerCase().contains(q)) out.add(s);
+        }
+        return out;
+    }
+
+    // Поиск курсов по подстроке (без учёта регистра)
+    public static List<Course> searchCourses(String query, Collection<Course> courses) {
+        String q = query.toLowerCase();
+        List<Course> out = new ArrayList<>();
+        for (Course c : courses) {
+            if (c.getTitle().toLowerCase().contains(q)) out.add(c);
+        }
+        return out;
+    }
 }
