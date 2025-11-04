@@ -87,50 +87,41 @@ public class Registrar {
     }
 
     // Отчёты/вывод
-
-    public void printTranscript(UUID studentId) {                                   // ACTION + CALCULATION
+    public void printTranscript(UUID studentId) {  // ACTION
         Student s = getStudent(studentId);
         System.out.println("Студент: " + s);
 
-        var studentEnrollments = s.getEnrollmentIds().stream()
-                .map(enrollments::get).toList();
+        var studentEnrollments = Calculations.enrollmentsOfStudent(s, enrollments);
 
         if (studentEnrollments.isEmpty()) {
             System.out.println("Курсов нет.");
             return;
         }
 
-        int totalCredits = 0;
-        double totalPoints = 0.0;
+        List<String> lines = Calculations.transcriptLines(studentEnrollments, courses);
+        double gpa = Calculations.calculateGpa(studentEnrollments, courses);
 
-        for (Enrollment e : studentEnrollments) {
-            Course c = courses.get(e.getCourseId());
-            String grade = e.getGrade().map(Enum::name).orElse("-");
-            System.out.printf(" - %s (%d кр.) — %s%n", c.getTitle(), c.getCredits(), grade);
-
-            if (e.getGrade().isPresent()) {
-                totalCredits += c.getCredits();
-                totalPoints += c.getCredits() * e.getGrade().get().points();
-            }
-        }
-
-        double gpa = totalCredits == 0 ? 0.0 : totalPoints / totalCredits;
+        lines.forEach(System.out::println);
         System.out.printf("GPA: %.2f%n", gpa);
     }
 
-    public void printRoster(UUID courseId) {                                        // ACTION + CALCULATION
+    public void printRoster(UUID courseId) {       // ACTION
         Course c = getCourse(courseId);
         System.out.println("Курс: " + c);
         c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + professors.get(pid)));
-        if (c.getEnrollmentIds().isEmpty()) {
+
+        List<Student> roster = Calculations.rosterForCourse(courseId, courses, enrollments, students);
+
+        if (roster.isEmpty()) {
             System.out.println("Группа пуста.");
             return;
         }
-        for (UUID enrId : c.getEnrollmentIds()) {
-            Enrollment e = enrollments.get(enrId);
-            System.out.println(" - " + students.get(e.getStudentId()));
+
+        for (Student st : roster) {
+            System.out.println(" - " + st);
         }
     }
+
 
     public void printProfessorCourses(UUID profId) {                                // ACTION
         Professor p = getProfessor(profId);
