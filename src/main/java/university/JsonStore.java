@@ -9,11 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 final class JsonStore {
+    // DATA
     private final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .create();
 
+    // ACTION
     public void save(Path path, Snapshot snap) {
         try (Writer w = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
             gson.toJson(snap, w);
@@ -22,6 +24,7 @@ final class JsonStore {
         }
     }
 
+    // ACTION
     public Snapshot load(Path path) {
         try (Reader r = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             Snapshot snap = gson.fromJson(r, Snapshot.class);

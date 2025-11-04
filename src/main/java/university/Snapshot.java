@@ -3,6 +3,9 @@ package university;
 import java.util.*;
 
 public final class Snapshot {
+    /**
+     * All of these fields is DATA
+     */
     public List<StudentSnap> students = new ArrayList<>();
     public List<ProfessorSnap> professors = new ArrayList<>();
     public List<CourseSnap> courses = new ArrayList<>();

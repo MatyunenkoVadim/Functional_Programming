@@ -5,9 +5,11 @@ import java.util.UUID;
 
 public class Main {
     public static void main(String[] args) {
+        // DATA
         Registrar reg = new Registrar();
         Scanner in = new Scanner(System.in);
 
+        // ACTION
         while (true) {
             System.out.println("""
                     1) Добавить студента

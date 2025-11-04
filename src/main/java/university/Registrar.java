@@ -4,30 +4,34 @@ import java.util.*;
 import java.nio.file.Path;
 
 public class Registrar {
+    /**
+     * All of these fields is DATA
+     */
     private final Map<UUID, Student> students = new LinkedHashMap<>();
     private final Map<UUID, Professor> professors = new LinkedHashMap<>();
     private final Map<UUID, Course> courses = new LinkedHashMap<>();
     private final Map<UUID, Enrollment> enrollments = new LinkedHashMap<>();
 
-    public Student addStudent(String name) {
+
+    public Student addStudent(String name) {                                        // ACTION
         Student s = new Student(name);
         students.put(s.getId(), s);
         return s;
     }
 
-    public Professor addProfessor(String name) {
+    public Professor addProfessor(String name) {                                    // ACTION
         Professor p = new Professor(name);
         professors.put(p.getId(), p);
         return p;
     }
 
-    public Course addCourse(String title, int credits) {
+    public Course addCourse(String title, int credits) {                            // ACTION
         Course c = new Course(title, credits);
         courses.put(c.getId(), c);
         return c;
     }
 
-    public void removeCourse(UUID courseId) {
+    public void removeCourse(UUID courseId) {                                       // ACTION
         Course c = getCourse(courseId);
         // снять курс у преподавателя, если был назначен
         c.getProfessorId().ifPresent(pid -> professors.get(pid).unassignCourse(courseId));
@@ -42,14 +46,14 @@ public class Registrar {
 
     // Связи
 
-    public void assignProfessor(UUID courseId, UUID profId) {
+    public void assignProfessor(UUID courseId, UUID profId) {                       // ACTION
         Course c = getCourse(courseId);
         Professor p = getProfessor(profId);
         c.setProfessor(p.getId());
         p.assignCourse(c.getId());
     }
 
-    public Enrollment enroll(UUID studentId, UUID courseId) {
+    public Enrollment enroll(UUID studentId, UUID courseId) {                       // ACTION
         Student s = getStudent(studentId);
         Course c = getCourse(courseId);
 
@@ -65,7 +69,7 @@ public class Registrar {
         return e;
     }
 
-    public void drop(UUID studentId, UUID courseId) {
+    public void drop(UUID studentId, UUID courseId) {                               // ACTION
         Enrollment e = findEnrollment(studentId, courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
         Student s = getStudent(studentId);
@@ -76,7 +80,7 @@ public class Registrar {
         enrollments.remove(e.getId());
     }
 
-    public void grade(UUID studentId, UUID courseId, Grade grade) {
+    public void grade(UUID studentId, UUID courseId, Grade grade) {                 // ACTION
         Enrollment e = findEnrollment(studentId, courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
         e.setGrade(grade);
@@ -84,7 +88,7 @@ public class Registrar {
 
     // Отчёты/вывод
 
-    public void printTranscript(UUID studentId) {
+    public void printTranscript(UUID studentId) {                                   // ACTION + CALCULATION
         Student s = getStudent(studentId);
         System.out.println("Студент: " + s);
 
@@ -114,7 +118,7 @@ public class Registrar {
         System.out.printf("GPA: %.2f%n", gpa);
     }
 
-    public void printRoster(UUID courseId) {
+    public void printRoster(UUID courseId) {                                        // ACTION + CALCULATION
         Course c = getCourse(courseId);
         System.out.println("Курс: " + c);
         c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + professors.get(pid)));
@@ -128,7 +132,7 @@ public class Registrar {
         }
     }
 
-    public void printProfessorCourses(UUID profId) {
+    public void printProfessorCourses(UUID profId) {                                // ACTION
         Professor p = getProfessor(profId);
         System.out.println("Преподаватель: " + p);
         if (p.getCourseIds().isEmpty()) {
@@ -138,7 +142,7 @@ public class Registrar {
         for (UUID cid : p.getCourseIds()) System.out.println(" - " + courses.get(cid));
     }
 
-    public void search(String query) {
+    public void search(String query) {                                              // ACTION
         String q = query.toLowerCase();
         System.out.println("Студенты:");
         students.values().stream().filter(s -> s.getName().toLowerCase().contains(q)).forEach(s -> System.out.println(" - " + s));
@@ -148,32 +152,32 @@ public class Registrar {
 
     // Вспомогательные
 
-    private Optional<Enrollment> findEnrollment(UUID studentId, UUID courseId) {
+    private Optional<Enrollment> findEnrollment(UUID studentId, UUID courseId) {    // CALCULATION
         return enrollments.values().stream()
                 .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))
                 .findFirst();
     }
 
-    private Student getStudent(UUID id) {
+    private Student getStudent(UUID id) {                                           // CALCULATION
         var s = students.get(id);
         if (s == null) throw new IllegalArgumentException("student not found");
         return s;
     }
 
-    private Professor getProfessor(UUID id) {
+    private Professor getProfessor(UUID id) {                                       // CALCULATION
         var p = professors.get(id);
         if (p == null) throw new IllegalArgumentException("professor not found");
         return p;
     }
 
-    private Course getCourse(UUID id) {
+    private Course getCourse(UUID id) {                                             // CALCULATION
         var c = courses.get(id);
         if (c == null) throw new IllegalArgumentException("course not found");
         return c;
     }
 
     //Save and Load
-    public void saveToJson(Path path) {
+    public void saveToJson(Path path) {                                             // ACTION
         Snapshot snap = new Snapshot();
 
         // students
@@ -219,7 +223,7 @@ public class Registrar {
         new JsonStore().save(path, snap);
     }
 
-    public void loadFromJson(Path path) {
+    public void loadFromJson(Path path) {                                           // ACTION
         Snapshot snap = new JsonStore().load(path);
 
         // очистим текущее состояние
