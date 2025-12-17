@@ -10,7 +10,7 @@ public class Registrar {
     public Student addStudent(String name) {
         Student s = new Student(name);
 
-        Map<UUID, Student> students = copyMap(state.students);
+        Map<UUID, Student> students = copyMap(state.students());
         students.put(s.getId(), s);
 
         state = state.withStudents(students);
@@ -20,7 +20,7 @@ public class Registrar {
     public Professor addProfessor(String name) {
         Professor p = new Professor(name);
 
-        Map<UUID, Professor> professors = copyMap(state.professors);
+        Map<UUID, Professor> professors = copyMap(state.professors());
         professors.put(p.getId(), p);
 
         state = state.withProfessors(professors);
@@ -30,7 +30,7 @@ public class Registrar {
     public Course addCourse(String title, int credits) {
         Course c = new Course(title, credits);
 
-        Map<UUID, Course> courses = copyMap(state.courses);
+        Map<UUID, Course> courses = copyMap(state.courses());
         courses.put(c.getId(), c);
 
         state = state.withCourses(courses);
@@ -40,10 +40,10 @@ public class Registrar {
     public void removeCourse(UUID courseId) {
         Course c = getCourse(courseId);
 
-        Map<UUID, Student> students = copyMap(state.students);
-        Map<UUID, Professor> professors = copyMap(state.professors);
-        Map<UUID, Course> courses = copyMap(state.courses);
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments);
+        Map<UUID, Student> students = copyMap(state.students());
+        Map<UUID, Professor> professors = copyMap(state.professors());
+        Map<UUID, Course> courses = copyMap(state.courses());
+        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
 
         // снять курс у преподавателя, если был назначен
         UUID oldProfId = c.getProfessorId().orElse(null);
@@ -73,8 +73,8 @@ public class Registrar {
         Course c = getCourse(courseId);
         Professor p = getProfessor(profId);
 
-        Map<UUID, Professor> professors = copyMap(state.professors);
-        Map<UUID, Course> courses = copyMap(state.courses);
+        Map<UUID, Professor> professors = copyMap(state.professors());
+        Map<UUID, Course> courses = copyMap(state.courses());
 
         // если курс уже был назначен другому преподавателю — снять у старого
         UUID oldProfId = c.getProfessorId().orElse(null);
@@ -103,15 +103,15 @@ public class Registrar {
 
         Enrollment e = new Enrollment(studentId, courseId, c.getCredits());
 
-        Map<UUID, Student> students = copyMap(state.students);
-        Map<UUID, Course> courses = copyMap(state.courses);
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments);
+        Map<UUID, Student> students = copyMap(state.students());
+        Map<UUID, Course> courses = copyMap(state.courses());
+        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
 
         enrollments.put(e.getId(), e);
         students.put(s.getId(), s.withAddedEnrollment(e.getId()));
         courses.put(c.getId(), c.withAddedEnrollment(e.getId()));
 
-        state = new State(students, state.professors, courses, enrollments);
+        state = new State(students, state.professors(), courses, enrollments);
         return e;
     }
 
@@ -122,22 +122,22 @@ public class Registrar {
         Student s = getStudent(studentId);
         Course c = getCourse(courseId);
 
-        Map<UUID, Student> students = copyMap(state.students);
-        Map<UUID, Course> courses = copyMap(state.courses);
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments);
+        Map<UUID, Student> students = copyMap(state.students());
+        Map<UUID, Course> courses = copyMap(state.courses());
+        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
 
         enrollments.remove(e.getId());
         students.put(s.getId(), s.withRemovedEnrollment(e.getId()));
         courses.put(c.getId(), c.withRemovedEnrollment(e.getId()));
 
-        state = new State(students, state.professors, courses, enrollments);
+        state = new State(students, state.professors(), courses, enrollments);
     }
 
     public void grade(UUID studentId, UUID courseId, Grade grade) {
         Enrollment e = findEnrollment(studentId, courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
 
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments);
+        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
         enrollments.put(e.getId(), e.withGrade(grade));
 
         state = state.withEnrollments(enrollments);
@@ -148,15 +148,15 @@ public class Registrar {
         Student s = getStudent(studentId);
         System.out.println("Студент: " + s);
 
-        var studentEnrollments = Calculations.enrollmentsOfStudent(s, state.enrollments);
+        var studentEnrollments = Calculations.enrollmentsOfStudent(s, state.enrollments());
 
         if (studentEnrollments.isEmpty()) {
             System.out.println("Курсов нет.");
             return;
         }
 
-        List<String> lines = Calculations.transcriptLines(studentEnrollments, state.courses);
-        double gpa = Calculations.calculateGpa(studentEnrollments, state.courses);
+        List<String> lines = Calculations.transcriptLines(studentEnrollments, state.courses());
+        double gpa = Calculations.calculateGpa(studentEnrollments, state.courses());
 
         lines.forEach(System.out::println);
         System.out.printf("GPA: %.2f%n", gpa);
@@ -165,9 +165,9 @@ public class Registrar {
     public void printRoster(UUID courseId) {
         Course c = getCourse(courseId);
         System.out.println("Курс: " + c);
-        c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + state.professors.get(pid)));
+        c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + state.professors().get(pid)));
 
-        List<Student> roster = Calculations.rosterForCourse(courseId, state.courses, state.enrollments, state.students);
+        List<Student> roster = Calculations.rosterForCourse(courseId, state.courses(), state.enrollments(), state.students());
 
         if (roster.isEmpty()) {
             System.out.println("Группа пуста.");
@@ -183,7 +183,7 @@ public class Registrar {
         Professor p = getProfessor(profId);
         System.out.println("Преподаватель: " + p);
 
-        List<Course> list = Calculations.coursesOfProfessor(p, state.courses);
+        List<Course> list = Calculations.coursesOfProfessor(p, state.courses());
 
         if (list.isEmpty()) {
             System.out.println("Курсов нет.");
@@ -196,8 +196,8 @@ public class Registrar {
     }
 
     public void search(String query) {
-        List<Student> st = Calculations.searchStudents(query, state.students.values());
-        List<Course>  cs = Calculations.searchCourses(query,  state.courses.values());
+        List<Student> st = Calculations.searchStudents(query, state.students().values());
+        List<Course>  cs = Calculations.searchCourses(query,  state.courses().values());
 
         System.out.println("Студенты:");
         if (st.isEmpty()) System.out.println(" - не найдено");
@@ -210,25 +210,25 @@ public class Registrar {
 
     // Search methods
     private Optional<Enrollment> findEnrollment(UUID studentId, UUID courseId) {
-        return state.enrollments.values().stream()
+        return state.enrollments().values().stream()
                 .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))
                 .findFirst();
     }
 
     private Student getStudent(UUID id) {
-        var s = state.students.get(id);
+        var s = state.students().get(id);
         if (s == null) throw new IllegalArgumentException("student not found");
         return s;
     }
 
     private Professor getProfessor(UUID id) {
-        var p = state.professors.get(id);
+        var p = state.professors().get(id);
         if (p == null) throw new IllegalArgumentException("professor not found");
         return p;
     }
 
     private Course getCourse(UUID id) {
-        var c = state.courses.get(id);
+        var c = state.courses().get(id);
         if (c == null) throw new IllegalArgumentException("course not found");
         return c;
     }
@@ -278,7 +278,7 @@ public class Registrar {
     private static Snapshot toSnapshot(State st) {
         Snapshot snap = new Snapshot();
 
-        for (var s : st.students.values()) {
+        for (var s : st.students().values()) {
             var ss = new Snapshot.StudentSnap();
             ss.id = s.getId();
             ss.name = s.getName();
@@ -286,7 +286,7 @@ public class Registrar {
             snap.students.add(ss);
         }
 
-        for (var p : st.professors.values()) {
+        for (var p : st.professors().values()) {
             var ps = new Snapshot.ProfessorSnap();
             ps.id = p.getId();
             ps.name = p.getName();
@@ -294,7 +294,7 @@ public class Registrar {
             snap.professors.add(ps);
         }
 
-        for (var c : st.courses.values()) {
+        for (var c : st.courses().values()) {
             var cs = new Snapshot.CourseSnap();
             cs.id = c.getId();
             cs.title = c.getTitle();
@@ -304,7 +304,7 @@ public class Registrar {
             snap.courses.add(cs);
         }
 
-        for (var e : st.enrollments.values()) {
+        for (var e : st.enrollments().values()) {
             var es = new Snapshot.EnrollmentSnap();
             es.id = e.getId();
             es.studentId = e.getStudentId();
@@ -315,42 +315,5 @@ public class Registrar {
         }
 
         return snap;
-    }
-
-    private static final class State {
-        final Map<UUID, Student> students;
-        final Map<UUID, Professor> professors;
-        final Map<UUID, Course> courses;
-        final Map<UUID, Enrollment> enrollments;
-
-        State(Map<UUID, Student> students,
-              Map<UUID, Professor> professors,
-              Map<UUID, Course> courses,
-              Map<UUID, Enrollment> enrollments) {
-            this.students = students;
-            this.professors = professors;
-            this.courses = courses;
-            this.enrollments = enrollments;
-        }
-
-        static State empty() {
-            return new State(new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
-        }
-
-        State withStudents(Map<UUID, Student> v) {
-            return new State(v, this.professors, this.courses, this.enrollments);
-        }
-
-        State withProfessors(Map<UUID, Professor> v) {
-            return new State(this.students, v, this.courses, this.enrollments);
-        }
-
-        State withCourses(Map<UUID, Course> v) {
-            return new State(this.students, this.professors, v, this.enrollments);
-        }
-
-        State withEnrollments(Map<UUID, Enrollment> v) {
-            return new State(this.students, this.professors, this.courses, v);
-        }
     }
 }
