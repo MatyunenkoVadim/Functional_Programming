@@ -3,82 +3,115 @@ package university;
 import java.util.*;
 
 public class Course {
-    // DATA
     private UUID id;
     private String title;
     private int credits;
     private UUID professorId; // может быть null
-    private final Set<UUID> enrollmentIds = new LinkedHashSet<>();
+    private Set<UUID> enrollmentIds;
 
-    // ACTION
     public Course(String title, int credits) {
-        this.id = Ids.newId();
-        setTitle(title);
-        setCredits(credits);
+        this(Ids.newId(), title, credits, null, Collections.emptySet());
     }
 
-    // ACTION
     Course(UUID id, String title, int credits, UUID professorId) {
+        this(id, title, credits, professorId, Collections.emptySet());
+    }
+
+    Course(UUID id, String title, int credits, UUID professorId, Collection<UUID> enrollmentIds) {
         if (id == null) throw new IllegalArgumentException("id");
         this.id = id;
         setTitle(title);
         setCredits(credits);
-        this.professorId = professorId; // может быть null
+        this.professorId = professorId;
+        this.enrollmentIds = new LinkedHashSet<>(Objects.requireNonNull(enrollmentIds));
     }
 
-    // CALCULATION
     public UUID getId() {
         return id;
     }
 
-    // CALCULATION
     public String getTitle() {
         return title;
     }
 
-    // CALCULATION
     public int getCredits() {
         return credits;
     }
 
-    // ACTION
     public void setTitle(String title) {
         if (title == null || title.isBlank()) throw new IllegalArgumentException("title");
         this.title = title.trim();
     }
 
-    // ACTION
-    private void setCredits(int credits) {
+    void setCredits(int credits) {
         if (credits <= 0) throw new IllegalArgumentException("credits");
         this.credits = credits;
     }
 
-    // ACTION
     public Optional<UUID> getProfessorId() {
         return Optional.ofNullable(professorId);
     }
 
-    // ACTION
     public void setProfessor(UUID professorId) {
         this.professorId = Objects.requireNonNull(professorId);
     }
 
-    // ACTION
+    public void clearProfessor() {
+        this.professorId = null;
+    }
+
     public void addEnrollment(UUID enrollmentId) {
-        enrollmentIds.add(Objects.requireNonNull(enrollmentId));
+        UUID id = Objects.requireNonNull(enrollmentId);
+
+        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.add(id);
+        this.enrollmentIds = copy;
     }
 
-    // ACTION
     public void removeEnrollment(UUID enrollmentId) {
-        enrollmentIds.remove(enrollmentId);
+        if (enrollmentId == null) return;
+
+        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.remove(enrollmentId);
+        this.enrollmentIds = copy;
     }
 
-    // ACTION
     public Set<UUID> getEnrollmentIds() {
-        return Collections.unmodifiableSet(enrollmentIds);
+        return Collections.unmodifiableSet(new LinkedHashSet<>(enrollmentIds));
     }
 
-    // CALCULATION
+    public Course withTitle(String newTitle) {
+        return new Course(this.id, newTitle, this.credits, this.professorId, this.enrollmentIds);
+    }
+
+    public Course withCredits(int newCredits) {
+        return new Course(this.id, this.title, newCredits, this.professorId, this.enrollmentIds);
+    }
+
+    public Course withProfessor(UUID newProfessorId) {
+        return new Course(this.id, this.title, this.credits, Objects.requireNonNull(newProfessorId), this.enrollmentIds);
+    }
+
+    public Course withoutProfessor() {
+        return new Course(this.id, this.title, this.credits, null, this.enrollmentIds);
+    }
+
+    public Course withAddedEnrollment(UUID enrollmentId) {
+        UUID id = Objects.requireNonNull(enrollmentId);
+
+        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.add(id);
+        return new Course(this.id, this.title, this.credits, this.professorId, copy);
+    }
+
+    public Course withRemovedEnrollment(UUID enrollmentId) {
+        if (enrollmentId == null) return this;
+
+        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.remove(enrollmentId);
+        return new Course(this.id, this.title, this.credits, this.professorId, copy);
+    }
+
     @Override
     public String toString() {
         return "Course{" + id + ", '" + title + "', " + credits + " кр.}";
