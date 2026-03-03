@@ -2,12 +2,12 @@ package university;
 
 import java.util.*;
 
-public class Enrollment {
-    private UUID id;
-    private UUID studentId;
-    private UUID courseId;
-    private int credits;
-    private Grade grade; // может быть null до выставления
+public final class Enrollment {
+    private final UUID id;
+    private final UUID studentId;
+    private final UUID courseId;
+    private final int credits;
+    private final Grade grade; // может быть null до выставления
 
     public Enrollment(UUID studentId, UUID courseId, int credits) {
         this(Ids.newId(), studentId, courseId, credits, null);
@@ -15,10 +15,14 @@ public class Enrollment {
 
     Enrollment(UUID id, UUID studentId, UUID courseId, int credits, Grade grade) {
         if (id == null) throw new IllegalArgumentException("id");
+        if (studentId == null || courseId == null) throw new IllegalArgumentException("ids");
+        if (credits <= 0) throw new IllegalArgumentException("credits");
+
         this.id = id;
-        setRefs(studentId, courseId);
-        setCredits(credits);
-        this.grade = grade; // может быть null
+        this.studentId = studentId;
+        this.courseId = courseId;
+        this.credits = credits;
+        this.grade = grade; // may be null
     }
 
     public UUID getId() {
@@ -41,32 +45,12 @@ public class Enrollment {
         return Optional.ofNullable(grade);
     }
 
-    public void setGrade(Grade g) {
-        Enrollment updated = withGrade(Objects.requireNonNull(g));
-        this.id = updated.id;
-        this.studentId = updated.studentId;
-        this.courseId = updated.courseId;
-        this.credits = updated.credits;
-        this.grade = updated.grade;
-    }
-
     public Enrollment withGrade(Grade g) {
-        return new Enrollment(this.id, this.studentId, this.courseId, this.credits, Objects.requireNonNull(g));
+        return new Enrollment(this.id, this.studentId, this.courseId, this.credits, Objects.requireNonNull(g, "grade"));
     }
 
     public Enrollment withoutGrade() {
         return new Enrollment(this.id, this.studentId, this.courseId, this.credits, null);
-    }
-
-    private void setRefs(UUID studentId, UUID courseId) {
-        if (studentId == null || courseId == null) throw new IllegalArgumentException("ids");
-        this.studentId = studentId;
-        this.courseId = courseId;
-    }
-
-    private void setCredits(int credits) {
-        if (credits <= 0) throw new IllegalArgumentException("credits");
-        this.credits = credits;
     }
 
     @Override

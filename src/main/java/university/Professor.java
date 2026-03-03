@@ -2,10 +2,10 @@ package university;
 
 import java.util.*;
 
-public class Professor {
-    private UUID id;
-    private String name;
-    private Set<UUID> courseIds;
+public final class Professor {
+    private final UUID id;
+    private final String name;
+    private final Set<UUID> courseIds;
 
     public Professor(String name) {
         this(Ids.newId(), name, Collections.emptySet());
@@ -17,10 +17,13 @@ public class Professor {
 
     Professor(UUID id, String name, Collection<UUID> courseIds) {
         if (id == null) throw new IllegalArgumentException("id");
+        if (name == null || name.isBlank()) throw new IllegalArgumentException("name");
+
         this.id = id;
-        setName(name);
-        // defensive copy on input
-        this.courseIds = new LinkedHashSet<>(Objects.requireNonNull(courseIds));
+        this.name = name.trim();
+
+        Collection<UUID> src = (courseIds == null) ? Collections.emptySet() : courseIds;
+        this.courseIds = Collections.unmodifiableSet(new LinkedHashSet<>(src));
     }
 
     public UUID getId() {
@@ -31,29 +34,8 @@ public class Professor {
         return name;
     }
 
-    public void setName(String name) {
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("name");
-        this.name = name.trim();
-    }
-
-    public void assignCourse(UUID courseId) {
-        UUID id = Objects.requireNonNull(courseId);
-
-        Set<UUID> copy = new LinkedHashSet<>(this.courseIds);
-        copy.add(id);
-        this.courseIds = copy;
-    }
-
-    public void unassignCourse(UUID courseId) {
-        if (courseId == null) return;
-
-        Set<UUID> copy = new LinkedHashSet<>(this.courseIds);
-        copy.remove(courseId);
-        this.courseIds = copy;
-    }
-
     public Set<UUID> getCourseIds() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(courseIds));
+        return courseIds;
     }
 
     public Professor withName(String newName) {
@@ -61,17 +43,17 @@ public class Professor {
     }
 
     public Professor withAssignedCourse(UUID courseId) {
-        UUID id = Objects.requireNonNull(courseId);
+        UUID cid = Objects.requireNonNull(courseId, "courseId");
 
-        Set<UUID> copy = new LinkedHashSet<>(this.courseIds);
-        copy.add(id);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.courseIds);
+        copy.add(cid);
         return new Professor(this.id, this.name, copy);
     }
 
     public Professor withUnassignedCourse(UUID courseId) {
         if (courseId == null) return this;
 
-        Set<UUID> copy = new LinkedHashSet<>(this.courseIds);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.courseIds);
         copy.remove(courseId);
         return new Professor(this.id, this.name, copy);
     }

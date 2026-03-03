@@ -2,12 +2,12 @@ package university;
 
 import java.util.*;
 
-public class Course {
-    private UUID id;
-    private String title;
-    private int credits;
-    private UUID professorId; // может быть null
-    private Set<UUID> enrollmentIds;
+public final class Course {
+    private final UUID id;
+    private final String title;
+    private final int credits;
+    private final UUID professorId; // может быть null
+    private final Set<UUID> enrollmentIds;
 
     public Course(String title, int credits) {
         this(Ids.newId(), title, credits, null, Collections.emptySet());
@@ -19,11 +19,16 @@ public class Course {
 
     Course(UUID id, String title, int credits, UUID professorId, Collection<UUID> enrollmentIds) {
         if (id == null) throw new IllegalArgumentException("id");
+        if (title == null || title.isBlank()) throw new IllegalArgumentException("title");
+        if (credits <= 0) throw new IllegalArgumentException("credits");
+
         this.id = id;
-        setTitle(title);
-        setCredits(credits);
+        this.title = title.trim();
+        this.credits = credits;
         this.professorId = professorId;
-        this.enrollmentIds = new LinkedHashSet<>(Objects.requireNonNull(enrollmentIds));
+
+        Collection<UUID> src = (enrollmentIds == null) ? Collections.emptySet() : enrollmentIds;
+        this.enrollmentIds = Collections.unmodifiableSet(new LinkedHashSet<>(src));
     }
 
     public UUID getId() {
@@ -38,46 +43,12 @@ public class Course {
         return credits;
     }
 
-    public void setTitle(String title) {
-        if (title == null || title.isBlank()) throw new IllegalArgumentException("title");
-        this.title = title.trim();
-    }
-
-    void setCredits(int credits) {
-        if (credits <= 0) throw new IllegalArgumentException("credits");
-        this.credits = credits;
-    }
-
     public Optional<UUID> getProfessorId() {
         return Optional.ofNullable(professorId);
     }
 
-    public void setProfessor(UUID professorId) {
-        this.professorId = Objects.requireNonNull(professorId);
-    }
-
-    public void clearProfessor() {
-        this.professorId = null;
-    }
-
-    public void addEnrollment(UUID enrollmentId) {
-        UUID id = Objects.requireNonNull(enrollmentId);
-
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.add(id);
-        this.enrollmentIds = copy;
-    }
-
-    public void removeEnrollment(UUID enrollmentId) {
-        if (enrollmentId == null) return;
-
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.remove(enrollmentId);
-        this.enrollmentIds = copy;
-    }
-
     public Set<UUID> getEnrollmentIds() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(enrollmentIds));
+        return enrollmentIds;
     }
 
     public Course withTitle(String newTitle) {
@@ -89,7 +60,7 @@ public class Course {
     }
 
     public Course withProfessor(UUID newProfessorId) {
-        return new Course(this.id, this.title, this.credits, Objects.requireNonNull(newProfessorId), this.enrollmentIds);
+        return new Course(this.id, this.title, this.credits, Objects.requireNonNull(newProfessorId, "professorId"), this.enrollmentIds);
     }
 
     public Course withoutProfessor() {
@@ -97,17 +68,17 @@ public class Course {
     }
 
     public Course withAddedEnrollment(UUID enrollmentId) {
-        UUID id = Objects.requireNonNull(enrollmentId);
+        UUID eid = Objects.requireNonNull(enrollmentId, "enrollmentId");
 
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.add(id);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.add(eid);
         return new Course(this.id, this.title, this.credits, this.professorId, copy);
     }
 
     public Course withRemovedEnrollment(UUID enrollmentId) {
         if (enrollmentId == null) return this;
 
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
         copy.remove(enrollmentId);
         return new Course(this.id, this.title, this.credits, this.professorId, copy);
     }

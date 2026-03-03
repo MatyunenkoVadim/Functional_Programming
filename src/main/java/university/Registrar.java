@@ -9,138 +9,43 @@ public class Registrar {
     // CRUD (ACTIONS)
     public Student addStudent(String name) {
         Student s = new Student(name);
-
-        Map<UUID, Student> students = copyMap(state.students());
-        students.put(s.getId(), s);
-
-        state = state.withStudents(students);
+        state = StateOps.putStudent(state, s);
         return s;
     }
 
     public Professor addProfessor(String name) {
         Professor p = new Professor(name);
-
-        Map<UUID, Professor> professors = copyMap(state.professors());
-        professors.put(p.getId(), p);
-
-        state = state.withProfessors(professors);
+        state = StateOps.putProfessor(state, p);
         return p;
     }
 
     public Course addCourse(String title, int credits) {
         Course c = new Course(title, credits);
-
-        Map<UUID, Course> courses = copyMap(state.courses());
-        courses.put(c.getId(), c);
-
-        state = state.withCourses(courses);
+        state = StateOps.putCourse(state, c);
         return c;
     }
 
     public void removeCourse(UUID courseId) {
-        Course c = getCourse(courseId);
-
-        Map<UUID, Student> students = copyMap(state.students());
-        Map<UUID, Professor> professors = copyMap(state.professors());
-        Map<UUID, Course> courses = copyMap(state.courses());
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
-
-        // снять курс у преподавателя, если был назначен
-        UUID oldProfId = c.getProfessorId().orElse(null);
-        if (oldProfId != null) {
-            Professor oldP = getProfessor(oldProfId);
-            professors.put(oldProfId, oldP.withUnassignedCourse(courseId));
-        }
-
-        // удалить зачисления + почистить студентов
-        for (UUID enrId : c.getEnrollmentIds()) {
-            Enrollment e = enrollments.remove(enrId);
-            if (e == null) continue;
-
-            Student s = students.get(e.getStudentId());
-            if (s != null) {
-                students.put(s.getId(), s.withRemovedEnrollment(enrId));
-            }
-        }
-
-        courses.remove(courseId);
-
-        state = new State(students, professors, courses, enrollments);
+        state = RegistrarCommands.removeCourse(state, courseId);
     }
 
     // Domain actions
     public void assignProfessor(UUID courseId, UUID profId) {
-        Course c = getCourse(courseId);
-        Professor p = getProfessor(profId);
-
-        Map<UUID, Professor> professors = copyMap(state.professors());
-        Map<UUID, Course> courses = copyMap(state.courses());
-
-        // если курс уже был назначен другому преподавателю — снять у старого
-        UUID oldProfId = c.getProfessorId().orElse(null);
-        if (oldProfId != null && !oldProfId.equals(profId)) {
-            Professor oldP = getProfessor(oldProfId);
-            professors.put(oldProfId, oldP.withUnassignedCourse(courseId));
-        }
-
-        Course updatedCourse = c.withProfessor(p.getId());
-        Professor updatedProfessor = p.withAssignedCourse(c.getId());
-
-        courses.put(updatedCourse.getId(), updatedCourse);
-        professors.put(updatedProfessor.getId(), updatedProfessor);
-
-        state = state.withProfessors(professors).withCourses(courses);
+        state = RegistrarCommands.assignProfessor(state, courseId, profId);
     }
 
     public Enrollment enroll(UUID studentId, UUID courseId) {
-        Student s = getStudent(studentId);
-        Course c = getCourse(courseId);
-
-        // простая защита от дубля
-        if (findEnrollment(studentId, courseId).isPresent()) {
-            throw new IllegalStateException("Студент уже записан на этот курс");
-        }
-
-        Enrollment e = new Enrollment(studentId, courseId, c.getCredits());
-
-        Map<UUID, Student> students = copyMap(state.students());
-        Map<UUID, Course> courses = copyMap(state.courses());
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
-
-        enrollments.put(e.getId(), e);
-        students.put(s.getId(), s.withAddedEnrollment(e.getId()));
-        courses.put(c.getId(), c.withAddedEnrollment(e.getId()));
-
-        state = new State(students, state.professors(), courses, enrollments);
-        return e;
+        RegistrarCommands.Result<Enrollment> r = RegistrarCommands.enroll(state, studentId, courseId);
+        state = r.state();
+        return r.value();
     }
 
     public void drop(UUID studentId, UUID courseId) {
-        Enrollment e = findEnrollment(studentId, courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
-
-        Student s = getStudent(studentId);
-        Course c = getCourse(courseId);
-
-        Map<UUID, Student> students = copyMap(state.students());
-        Map<UUID, Course> courses = copyMap(state.courses());
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
-
-        enrollments.remove(e.getId());
-        students.put(s.getId(), s.withRemovedEnrollment(e.getId()));
-        courses.put(c.getId(), c.withRemovedEnrollment(e.getId()));
-
-        state = new State(students, state.professors(), courses, enrollments);
+        state = RegistrarCommands.drop(state, studentId, courseId);
     }
 
     public void grade(UUID studentId, UUID courseId, Grade grade) {
-        Enrollment e = findEnrollment(studentId, courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
-
-        Map<UUID, Enrollment> enrollments = copyMap(state.enrollments());
-        enrollments.put(e.getId(), e.withGrade(grade));
-
-        state = state.withEnrollments(enrollments);
+        state = RegistrarCommands.grade(state, studentId, courseId, grade);
     }
 
     // Output

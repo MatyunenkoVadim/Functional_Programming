@@ -2,10 +2,10 @@ package university;
 
 import java.util.*;
 
-public class Student {
-    private UUID id;
-    private String name;
-    private Set<UUID> enrollmentIds;
+public final class Student {
+    private final UUID id;
+    private final String name;
+    private final Set<UUID> enrollmentIds;
 
     public Student(String name) {
         this(Ids.newId(), name, Collections.emptySet());
@@ -17,9 +17,13 @@ public class Student {
 
     Student(UUID id, String name, Collection<UUID> enrollmentIds) {
         if (id == null) throw new IllegalArgumentException("id");
+        if (name == null || name.isBlank()) throw new IllegalArgumentException("name");
+
         this.id = id;
-        setName(name);
-        this.enrollmentIds = new LinkedHashSet<>(Objects.requireNonNull(enrollmentIds));
+        this.name = name.trim();
+
+        Collection<UUID> src = (enrollmentIds == null) ? Collections.emptySet() : enrollmentIds;
+        this.enrollmentIds = Collections.unmodifiableSet(new LinkedHashSet<>(src));
     }
 
     public UUID getId() {
@@ -30,29 +34,8 @@ public class Student {
         return name;
     }
 
-    public void setName(String name) {
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("name");
-        this.name = name.trim();
-    }
-
-    public void addEnrollment(UUID enrollmentId) {
-        UUID id = Objects.requireNonNull(enrollmentId);
-
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.add(id);
-        this.enrollmentIds = copy;
-    }
-
-    public void removeEnrollment(UUID enrollmentId) {
-        if (enrollmentId == null) return;
-
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.remove(enrollmentId);
-        this.enrollmentIds = copy;
-    }
-
     public Set<UUID> getEnrollmentIds() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(enrollmentIds));
+        return enrollmentIds;
     }
 
     public Student withName(String newName) {
@@ -60,17 +43,17 @@ public class Student {
     }
 
     public Student withAddedEnrollment(UUID enrollmentId) {
-        UUID id = Objects.requireNonNull(enrollmentId);
+        UUID eid = Objects.requireNonNull(enrollmentId, "enrollmentId");
 
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
-        copy.add(id);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        copy.add(eid);
         return new Student(this.id, this.name, copy);
     }
 
     public Student withRemovedEnrollment(UUID enrollmentId) {
         if (enrollmentId == null) return this;
 
-        Set<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
+        LinkedHashSet<UUID> copy = new LinkedHashSet<>(this.enrollmentIds);
         copy.remove(enrollmentId);
         return new Student(this.id, this.name, copy);
     }
