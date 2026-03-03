@@ -1,6 +1,7 @@
 package university;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class Calculations {
@@ -57,62 +58,67 @@ public final class Calculations {
     }
 
     // Фильтрация зачислений конкретного студента
-    public static List<Enrollment> enrollmentsOfStudent(Student s, Map<UUID, Enrollment> enrollmentById) {
-        return s.getEnrollmentIds().stream()
-                .map(enrollmentById::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+    public static List<Enrollment> enrollmentsOfStudent(Student s, StateView st) {
+        return resolveAll(s.getEnrollmentIds(), id -> st.enrollment(id).orElse(null));
     }
 
     // Список курсов преподавателя
-    public static List<Course> coursesOfProfessor(
-            Professor professor,
-            Map<UUID, Course> courseById
-    ) {
-        List<Course> result = new ArrayList<>();
-        for (UUID cid : professor.getCourseIds()) {
-            Course c = courseById.get(cid);
-            if (c != null) result.add(c);
-        }
-        return result;
+    public static List<Course> coursesOfProfessor(Professor professor, StateView st) {
+        return resolveAll(professor.getCourseIds(), id -> st.course(id).orElse(null));
     }
 
     // Поиск студентов по подстроке (без учёта регистра)
     public static List<Student> searchStudents(String query, Collection<Student> students) {
-        String q = query.toLowerCase();
-        List<Student> out = new ArrayList<>();
-        for (Student s : students) {
-            if (s.getName().toLowerCase().contains(q)) out.add(s);
-        }
-        return out;
+        return searchBy(query, students, Student::getName);
     }
 
     // Поиск курсов по подстроке (без учёта регистра)
     public static List<Course> searchCourses(String query, Collection<Course> courses) {
-        String q = query.toLowerCase();
-        List<Course> out = new ArrayList<>();
-        for (Course c : courses) {
-            if (c.getTitle().toLowerCase().contains(q)) out.add(c);
-        }
-        return out;
+        return searchBy(query, courses, Course::getTitle);
     }
 
-    //New temp
     public static double calculateGpa(List<Enrollment> enrollments, StateView st) {
-        Map<UUID, Course> courseById = indexCourses(st.courses());
-        return calculateGpa(enrollments, courseById);
+        int totalCredits = 0;
+        double totalPoints = 0.0;
+
+        for (Enrollment e : enrollments) {
+            Course c = st.course(e.getCourseId()).orElse(null);
+            if (c == null) continue;
+
+            if (e.getGrade().isPresent()) {
+                int cr = c.getCredits();
+                totalCredits += cr;
+                totalPoints += cr * e.getGrade().get().points();
+            }
+        }
+        return totalCredits == 0 ? 0.0 : totalPoints / totalCredits;
     }
+
 
     public static List<String> transcriptLines(List<Enrollment> enrollments, StateView st) {
-        Map<UUID, Course> courseById = indexCourses(st.courses());
-        return transcriptLines(enrollments, courseById);
+        List<String> lines = new ArrayList<>();
+        for (Enrollment e : enrollments) {
+            Course c = st.course(e.getCourseId()).orElse(null);
+            if (c == null) continue;
+
+            String grade = e.getGrade().map(Enum::name).orElse("-");
+            lines.add(String.format(" - %s (%d кр.) — %s", c.getTitle(), c.getCredits(), grade));
+        }
+        return lines;
     }
 
     public static List<Student> rosterForCourse(UUID courseId, StateView st) {
-        Map<UUID, Course> courseById = indexCourses(st.courses());
-        Map<UUID, Enrollment> enrollmentById = indexEnrollments(st.enrollments());
-        Map<UUID, Student> studentById = indexStudents(st.students());
-        return rosterForCourse(courseId, courseById, enrollmentById, studentById);
+        Course c = st.course(courseId).orElse(null);
+        if (c == null) return List.of();
+
+        List<Enrollment> enrollments = resolveAll(c.getEnrollmentIds(), id -> st.enrollment(id).orElse(null));
+        List<Student> out = new ArrayList<>(enrollments.size());
+
+        for (Enrollment e : enrollments) {
+            Student s = st.student(e.getStudentId()).orElse(null);
+            if (s != null) out.add(s);
+        }
+        return out;
     }
 
     private static Map<UUID, Course> indexCourses(Collection<Course> courses) {
@@ -131,5 +137,27 @@ public final class Calculations {
         LinkedHashMap<UUID, Student> m = new LinkedHashMap<>();
         for (Student s : students) m.put(s.getId(), s);
         return m;
+    }
+
+    public static <T> List<T> searchBy(String query, Collection<T> items, Function<T, String> text) {
+        String q = (query == null) ? "" : query.toLowerCase();
+        List<T> out = new ArrayList<>();
+        for (T it : items) {
+            if (it == null) continue;
+            String s = text.apply(it);
+            if (s != null && s.toLowerCase().contains(q)) out.add(it);
+        }
+        return out;
+    }
+
+    public static <T> List<T> resolveAll(Collection<UUID> ids, Function<UUID, T> resolver) {
+        Collection<UUID> src = (ids == null) ? List.of() : ids;
+        List<T> out = new ArrayList<>(src.size());
+        for (UUID id : src) {
+            if (id == null) continue;
+            T v = resolver.apply(id);
+            if (v != null) out.add(v);
+        }
+        return out;
     }
 }

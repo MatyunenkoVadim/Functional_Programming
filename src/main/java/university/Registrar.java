@@ -52,8 +52,7 @@ public class Registrar {
     public QueryResults.Transcript getTranscript(UUID studentId) {
         Student s = getStudent(studentId);
 
-        var enrById = indexById(state.enrollments(), Enrollment::getId);
-        var studentEnrollments = Calculations.enrollmentsOfStudent(s, enrById);
+        var studentEnrollments = Calculations.enrollmentsOfStudent(s, state);
 
         if (studentEnrollments.isEmpty()) {
             return new QueryResults.Transcript(s, List.of(), 0.0);
@@ -80,8 +79,7 @@ public class Registrar {
     public QueryResults.ProfessorCourses getProfessorCourses(UUID profId) {
         Professor p = getProfessor(profId);
 
-        var courseById = indexById(state.courses(), Course::getId);
-        List<Course> list = Calculations.coursesOfProfessor(p, courseById);
+        List<Course> list = Calculations.coursesOfProfessor(p, state);
 
         return new QueryResults.ProfessorCourses(p, list);
     }
@@ -191,11 +189,5 @@ public class Registrar {
         }
 
         return snap;
-    }
-
-    private static <T> Map<UUID, T> indexById(Collection<T> items, java.util.function.Function<T, UUID> idFn) {
-        LinkedHashMap<UUID, T> m = new LinkedHashMap<>();
-        for (T it : items) m.put(idFn.apply(it), it);
-        return m;
     }
 }
