@@ -3,9 +3,6 @@ package university;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * CALCULATIONS
- */
 public final class Calculations {
     private Calculations() {
     }
@@ -98,5 +95,41 @@ public final class Calculations {
             if (c.getTitle().toLowerCase().contains(q)) out.add(c);
         }
         return out;
+    }
+
+    //New temp
+    public static double calculateGpa(List<Enrollment> enrollments, StateView st) {
+        Map<UUID, Course> courseById = indexCourses(st.courses());
+        return calculateGpa(enrollments, courseById);
+    }
+
+    public static List<String> transcriptLines(List<Enrollment> enrollments, StateView st) {
+        Map<UUID, Course> courseById = indexCourses(st.courses());
+        return transcriptLines(enrollments, courseById);
+    }
+
+    public static List<Student> rosterForCourse(UUID courseId, StateView st) {
+        Map<UUID, Course> courseById = indexCourses(st.courses());
+        Map<UUID, Enrollment> enrollmentById = indexEnrollments(st.enrollments());
+        Map<UUID, Student> studentById = indexStudents(st.students());
+        return rosterForCourse(courseId, courseById, enrollmentById, studentById);
+    }
+
+    private static Map<UUID, Course> indexCourses(Collection<Course> courses) {
+        LinkedHashMap<UUID, Course> m = new LinkedHashMap<>();
+        for (Course c : courses) m.put(c.getId(), c);
+        return m;
+    }
+
+    private static Map<UUID, Enrollment> indexEnrollments(Collection<Enrollment> enrollments) {
+        LinkedHashMap<UUID, Enrollment> m = new LinkedHashMap<>();
+        for (Enrollment e : enrollments) m.put(e.getId(), e);
+        return m;
+    }
+
+    private static Map<UUID, Student> indexStudents(Collection<Student> students) {
+        LinkedHashMap<UUID, Student> m = new LinkedHashMap<>();
+        for (Student s : students) m.put(s.getId(), s);
+        return m;
     }
 }

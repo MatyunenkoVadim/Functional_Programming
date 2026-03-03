@@ -52,14 +52,15 @@ public class Registrar {
     public QueryResults.Transcript getTranscript(UUID studentId) {
         Student s = getStudent(studentId);
 
-        var studentEnrollments = Calculations.enrollmentsOfStudent(s, state.enrollments());
+        var enrById = indexById(state.enrollments(), Enrollment::getId);
+        var studentEnrollments = Calculations.enrollmentsOfStudent(s, enrById);
 
         if (studentEnrollments.isEmpty()) {
             return new QueryResults.Transcript(s, List.of(), 0.0);
         }
 
-        List<String> lines = Calculations.transcriptLines(studentEnrollments, state.courses());
-        double gpa = Calculations.calculateGpa(studentEnrollments, state.courses());
+        List<String> lines = Calculations.transcriptLines(studentEnrollments, state);
+        double gpa = Calculations.calculateGpa(studentEnrollments, state);
 
         return new QueryResults.Transcript(s, lines, gpa);
     }
@@ -68,10 +69,10 @@ public class Registrar {
         Course c = getCourse(courseId);
 
         Professor prof = c.getProfessorId()
-                .map(pid -> state.professors().get(pid))
+                .flatMap(state::professor)
                 .orElse(null);
 
-        List<Student> roster = Calculations.rosterForCourse(courseId, state.courses(), state.enrollments(), state.students());
+        List<Student> roster = Calculations.rosterForCourse(courseId, state);
 
         return new QueryResults.Roster(c, prof, roster);
     }
@@ -79,44 +80,29 @@ public class Registrar {
     public QueryResults.ProfessorCourses getProfessorCourses(UUID profId) {
         Professor p = getProfessor(profId);
 
-        List<Course> list = Calculations.coursesOfProfessor(p, state.courses());
+        var courseById = indexById(state.courses(), Course::getId);
+        List<Course> list = Calculations.coursesOfProfessor(p, courseById);
 
         return new QueryResults.ProfessorCourses(p, list);
     }
 
     public QueryResults.SearchResult search(String query) {
-        List<Student> st = Calculations.searchStudents(query, state.students().values());
-        List<Course>  cs = Calculations.searchCourses(query, state.courses().values());
+        List<Student> st = Calculations.searchStudents(query, state.students());
+        List<Course>  cs = Calculations.searchCourses(query, state.courses());
         return new QueryResults.SearchResult(query, st, cs);
     }
 
     // Search methods
-    private Optional<Enrollment> findEnrollment(UUID studentId, UUID courseId) {
-        return state.enrollments().values().stream()
-                .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))
-                .findFirst();
-    }
-
     private Student getStudent(UUID id) {
-        var s = state.students().get(id);
-        if (s == null) throw new IllegalArgumentException("student not found");
-        return s;
+        return state.student(id).orElseThrow(() -> new IllegalArgumentException("student not found"));
     }
 
     private Professor getProfessor(UUID id) {
-        var p = state.professors().get(id);
-        if (p == null) throw new IllegalArgumentException("professor not found");
-        return p;
+        return state.professor(id).orElseThrow(() -> new IllegalArgumentException("professor not found"));
     }
 
     private Course getCourse(UUID id) {
-        var c = state.courses().get(id);
-        if (c == null) throw new IllegalArgumentException("course not found");
-        return c;
-    }
-
-    private static <K, V> LinkedHashMap<K, V> copyMap(Map<K, V> src) {
-        return new LinkedHashMap<>(src);
+        return state.course(id).orElseThrow(() -> new IllegalArgumentException("course not found"));
     }
 
     // Save / Load
@@ -168,7 +154,7 @@ public class Registrar {
     private static Snapshot toSnapshot(State st) {
         Snapshot snap = new Snapshot();
 
-        for (var s : st.students().values()) {
+        for (var s : st.studentsMap().values()) {
             var ss = new Snapshot.StudentSnap();
             ss.id = s.getId();
             ss.name = s.getName();
@@ -176,7 +162,7 @@ public class Registrar {
             snap.students.add(ss);
         }
 
-        for (var p : st.professors().values()) {
+        for (var p : st.professorsMap().values()) {
             var ps = new Snapshot.ProfessorSnap();
             ps.id = p.getId();
             ps.name = p.getName();
@@ -184,7 +170,7 @@ public class Registrar {
             snap.professors.add(ps);
         }
 
-        for (var c : st.courses().values()) {
+        for (var c : st.coursesMap().values()) {
             var cs = new Snapshot.CourseSnap();
             cs.id = c.getId();
             cs.title = c.getTitle();
@@ -194,7 +180,7 @@ public class Registrar {
             snap.courses.add(cs);
         }
 
-        for (var e : st.enrollments().values()) {
+        for (var e : st.enrollmentsMap().values()) {
             var es = new Snapshot.EnrollmentSnap();
             es.id = e.getId();
             es.studentId = e.getStudentId();
@@ -205,5 +191,11 @@ public class Registrar {
         }
 
         return snap;
+    }
+
+    private static <T> Map<UUID, T> indexById(Collection<T> items, java.util.function.Function<T, UUID> idFn) {
+        LinkedHashMap<UUID, T> m = new LinkedHashMap<>();
+        for (T it : items) m.put(idFn.apply(it), it);
+        return m;
     }
 }

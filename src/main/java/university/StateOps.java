@@ -16,7 +16,7 @@ public final class StateOps {
     public static State putStudent(State st, Student s) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(s, "student");
-        Map<UUID, Student> students = copy(st.students());
+        Map<UUID, Student> students = copy(st.studentsMap());
         students.put(s.getId(), s);
         return st.withStudents(students);
     }
@@ -24,7 +24,7 @@ public final class StateOps {
     public static State putProfessor(State st, Professor p) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(p, "professor");
-        Map<UUID, Professor> professors = copy(st.professors());
+        Map<UUID, Professor> professors = copy(st.professorsMap());
         professors.put(p.getId(), p);
         return st.withProfessors(professors);
     }
@@ -32,7 +32,7 @@ public final class StateOps {
     public static State putCourse(State st, Course c) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(c, "course");
-        Map<UUID, Course> courses = copy(st.courses());
+        Map<UUID, Course> courses = copy(st.coursesMap());
         courses.put(c.getId(), c);
         return st.withCourses(courses);
     }
@@ -40,7 +40,7 @@ public final class StateOps {
     public static State putEnrollment(State st, Enrollment e) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(e, "enrollment");
-        Map<UUID, Enrollment> enrollments = copy(st.enrollments());
+        Map<UUID, Enrollment> enrollments = copy(st.enrollmentsMap());
         enrollments.put(e.getId(), e);
         return st.withEnrollments(enrollments);
     }
@@ -50,7 +50,7 @@ public final class StateOps {
         Objects.requireNonNull(studentId, "studentId");
         Objects.requireNonNull(f, "mapper");
 
-        Student cur = st.students().get(studentId);
+        Student cur = st.studentsMap().get(studentId);
         if (cur == null) throw new IllegalArgumentException("student not found");
 
         Student updated = Objects.requireNonNull(f.apply(cur), "updated student");
@@ -62,7 +62,7 @@ public final class StateOps {
         Objects.requireNonNull(professorId, "professorId");
         Objects.requireNonNull(f, "mapper");
 
-        Professor cur = st.professors().get(professorId);
+        Professor cur = st.professorsMap().get(professorId);
         if (cur == null) throw new IllegalArgumentException("professor not found");
 
         Professor updated = Objects.requireNonNull(f.apply(cur), "updated professor");
@@ -74,7 +74,7 @@ public final class StateOps {
         Objects.requireNonNull(courseId, "courseId");
         Objects.requireNonNull(f, "mapper");
 
-        Course cur = st.courses().get(courseId);
+        Course cur = st.coursesMap().get(courseId);
         if (cur == null) throw new IllegalArgumentException("course not found");
 
         Course updated = Objects.requireNonNull(f.apply(cur), "updated course");
@@ -86,7 +86,7 @@ public final class StateOps {
         Objects.requireNonNull(enrollmentId, "enrollmentId");
         Objects.requireNonNull(f, "mapper");
 
-        Enrollment cur = st.enrollments().get(enrollmentId);
+        Enrollment cur = st.enrollmentsMap().get(enrollmentId);
         if (cur == null) throw new IllegalArgumentException("enrollment not found");
 
         Enrollment updated = Objects.requireNonNull(f.apply(cur), "updated enrollment");
@@ -97,7 +97,7 @@ public final class StateOps {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(enrollmentId, "enrollmentId");
 
-        Map<UUID, Enrollment> enrollments = copy(st.enrollments());
+        Map<UUID, Enrollment> enrollments = copy(st.enrollmentsMap());
         enrollments.remove(enrollmentId);
         return st.withEnrollments(enrollments);
     }
@@ -106,7 +106,7 @@ public final class StateOps {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(courseId, "courseId");
 
-        Map<UUID, Course> courses = copy(st.courses());
+        Map<UUID, Course> courses = copy(st.coursesMap());
         courses.remove(courseId);
         return st.withCourses(courses);
     }

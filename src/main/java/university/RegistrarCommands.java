@@ -19,17 +19,17 @@ public final class RegistrarCommands {
 
     public static void requireStudentExists(State st, UUID studentId) {
         Objects.requireNonNull(studentId, "studentId");
-        if (!st.students().containsKey(studentId)) throw new IllegalArgumentException("student not found");
+        if (!st.studentsMap().containsKey(studentId)) throw new IllegalArgumentException("student not found");
     }
 
     public static void requireProfessorExists(State st, UUID professorId) {
         Objects.requireNonNull(professorId, "professorId");
-        if (!st.professors().containsKey(professorId)) throw new IllegalArgumentException("professor not found");
+        if (!st.professorsMap().containsKey(professorId)) throw new IllegalArgumentException("professor not found");
     }
 
     public static void requireCourseExists(State st, UUID courseId) {
         Objects.requireNonNull(courseId, "courseId");
-        if (!st.courses().containsKey(courseId)) throw new IllegalArgumentException("course not found");
+        if (!st.coursesMap().containsKey(courseId)) throw new IllegalArgumentException("course not found");
     }
 
     public static Result<Enrollment> enroll(State st, UUID studentId, UUID courseId) {
@@ -41,7 +41,7 @@ public final class RegistrarCommands {
             throw new IllegalStateException("Студент уже записан на этот курс");
         }
 
-        Course c = st.courses().get(courseId);
+        Course c = st.coursesMap().get(courseId);
         Enrollment e = new Enrollment(studentId, courseId, c.getCredits());
 
         State next = st;
@@ -84,7 +84,7 @@ public final class RegistrarCommands {
         requireCourseExists(st, courseId);
         requireProfessorExists(st, professorId);
 
-        Course curCourse = st.courses().get(courseId);
+        Course curCourse = st.coursesMap().get(courseId);
         UUID oldProfId = curCourse.getProfessorId().orElse(null);
 
         State next = st;
@@ -105,7 +105,7 @@ public final class RegistrarCommands {
         Objects.requireNonNull(st, "state");
         requireCourseExists(st, courseId);
 
-        Course c = st.courses().get(courseId);
+        Course c = st.coursesMap().get(courseId);
 
         State next = st;
 
@@ -117,7 +117,7 @@ public final class RegistrarCommands {
 
         // удалить зачисления + почистить студентов
         for (UUID enrId : c.getEnrollmentIds()) {
-            Enrollment e = next.enrollments().get(enrId);
+            Enrollment e = next.enrollmentsMap().get(enrId);
             if (e == null) continue;
 
             next = StateOps.removeEnrollment(next, enrId);
@@ -131,7 +131,7 @@ public final class RegistrarCommands {
     }
 
     private static Optional<Enrollment> findEnrollment(State st, UUID studentId, UUID courseId) {
-        return st.enrollments().values().stream()
+        return st.enrollmentsMap().values().stream()
                 .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))
                 .findFirst();
     }

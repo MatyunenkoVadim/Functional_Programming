@@ -1,12 +1,8 @@
 package university;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
-public final class State {
+public final class State implements StateView {
     private final Map<UUID, Student> students;
     private final Map<UUID, Professor> professors;
     private final Map<UUID, Course> courses;
@@ -26,35 +22,64 @@ public final class State {
         return new State(new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
-    public Map<UUID, Student> students() {
-        return students;
+    @Override
+    public Optional<Student> student(UUID id) {
+        return Optional.ofNullable(students.get(id));
     }
 
-    public Map<UUID, Professor> professors() {
-        return professors;
+    @Override
+    public Optional<Professor> professor(UUID id) {
+        return Optional.ofNullable(professors.get(id));
     }
 
-    public Map<UUID, Course> courses() {
-        return courses;
+    @Override
+    public Optional<Course> course(UUID id) {
+        return Optional.ofNullable(courses.get(id));
     }
 
-    public Map<UUID, Enrollment> enrollments() {
-        return enrollments;
+    @Override
+    public Optional<Enrollment> enrollment(UUID id) {
+        return Optional.ofNullable(enrollments.get(id));
     }
 
-    public State withStudents(Map<UUID, Student> v) {
+    @Override
+    public Collection<Student> students() {
+        return students.values();
+    }
+
+    @Override
+    public Collection<Professor> professors() {
+        return professors.values();
+    }
+
+    @Override
+    public Collection<Course> courses() {
+        return courses.values();
+    }
+
+    @Override
+    public Collection<Enrollment> enrollments() {
+        return enrollments.values();
+    }
+
+    Map<UUID, Student> studentsMap() { return students; }
+    Map<UUID, Professor> professorsMap() { return professors; }
+    Map<UUID, Course> coursesMap() { return courses; }
+    Map<UUID, Enrollment> enrollmentsMap() { return enrollments; }
+
+    State withStudents(Map<UUID, Student> v) {
         return new State(v, this.professors, this.courses, this.enrollments);
     }
 
-    public State withProfessors(Map<UUID, Professor> v) {
+    State withProfessors(Map<UUID, Professor> v) {
         return new State(this.students, v, this.courses, this.enrollments);
     }
 
-    public State withCourses(Map<UUID, Course> v) {
+    State withCourses(Map<UUID, Course> v) {
         return new State(this.students, this.professors, v, this.enrollments);
     }
 
-    public State withEnrollments(Map<UUID, Enrollment> v) {
+    State withEnrollments(Map<UUID, Enrollment> v) {
         return new State(this.students, this.professors, this.courses, v);
     }
 
