@@ -95,59 +95,25 @@ public class Main {
                     case "8" -> {
                         System.out.print("ID студента: ");
                         UUID studentId = UUID.fromString(in.nextLine().trim());
-                        var t = reg.getTranscript(studentId);
-                        System.out.println("Студент: " + t.student());
-                        if (t.lines().isEmpty()) {
-                            System.out.println("Курсов нет.");
-                        } else {
-                            t.lines().forEach(System.out::println);
-                            System.out.printf("GPA: %.2f%n", t.gpa());
-                        }
+                        reg.printTranscript(studentId);
                     }
 
                     case "9" -> {
                         System.out.print("ID курса: ");
                         UUID courseId = UUID.fromString(in.nextLine().trim());
-                        var r = reg.getRoster(courseId);
-                        System.out.println("Курс: " + r.course());
-                        if (r.professorOrNull() != null) {
-                            System.out.println("Преподаватель: " + r.professorOrNull());
-                        }
-                        if (r.students().isEmpty()) {
-                            System.out.println("Группа пуста.");
-                        } else {
-                            for (Student st : r.students()) {
-                                System.out.println(" - " + st);
-                            }
-                        }
+                        reg.printRoster(courseId);
                     }
 
                     case "10" -> {
                         System.out.print("ID преподавателя: ");
                         UUID profId = UUID.fromString(in.nextLine().trim());
-                        var pc = reg.getProfessorCourses(profId);
-                        System.out.println("Преподаватель: " + pc.professor());
-                        if (pc.courses().isEmpty()) {
-                            System.out.println("Курсов нет.");
-                        } else {
-                            for (Course c : pc.courses()) {
-                                System.out.println(" - " + c);
-                            }
-                        }
+                        reg.printProfessorCourses(profId);
                     }
 
                     case "11" -> {
                         System.out.print("Часть имени: ");
                         String q = in.nextLine().trim();
-                        var s = reg.search(q);
-
-                        System.out.println("Студенты:");
-                        if (s.students().isEmpty()) System.out.println(" - не найдено");
-                        else s.students().forEach(st -> System.out.println(" - " + st));
-
-                        System.out.println("Курсы:");
-                        if (s.courses().isEmpty()) System.out.println(" - не найдено");
-                        else s.courses().forEach(c -> System.out.println(" - " + c));
+                        reg.search(q);
                     }
 
                     case "12" -> {

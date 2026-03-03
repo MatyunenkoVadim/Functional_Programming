@@ -49,45 +49,68 @@ public class Registrar {
     }
 
     // Output
-    public QueryResults.Transcript getTranscript(UUID studentId) {
+    public void printTranscript(UUID studentId) {
         Student s = getStudent(studentId);
+        System.out.println("Студент: " + s);
 
         var studentEnrollments = Calculations.enrollmentsOfStudent(s, state.enrollments());
 
         if (studentEnrollments.isEmpty()) {
-            return new QueryResults.Transcript(s, List.of(), 0.0);
+            System.out.println("Курсов нет.");
+            return;
         }
 
         List<String> lines = Calculations.transcriptLines(studentEnrollments, state.courses());
         double gpa = Calculations.calculateGpa(studentEnrollments, state.courses());
 
-        return new QueryResults.Transcript(s, lines, gpa);
+        lines.forEach(System.out::println);
+        System.out.printf("GPA: %.2f%n", gpa);
     }
 
-    public QueryResults.Roster getRoster(UUID courseId) {
+    public void printRoster(UUID courseId) {
         Course c = getCourse(courseId);
-
-        Professor prof = c.getProfessorId()
-                .map(pid -> state.professors().get(pid))
-                .orElse(null);
+        System.out.println("Курс: " + c);
+        c.getProfessorId().ifPresent(pid -> System.out.println("Преподаватель: " + state.professors().get(pid)));
 
         List<Student> roster = Calculations.rosterForCourse(courseId, state.courses(), state.enrollments(), state.students());
 
-        return new QueryResults.Roster(c, prof, roster);
+        if (roster.isEmpty()) {
+            System.out.println("Группа пуста.");
+            return;
+        }
+
+        for (Student st : roster) {
+            System.out.println(" - " + st);
+        }
     }
 
-    public QueryResults.ProfessorCourses getProfessorCourses(UUID profId) {
+    public void printProfessorCourses(UUID profId) {
         Professor p = getProfessor(profId);
+        System.out.println("Преподаватель: " + p);
 
         List<Course> list = Calculations.coursesOfProfessor(p, state.courses());
 
-        return new QueryResults.ProfessorCourses(p, list);
+        if (list.isEmpty()) {
+            System.out.println("Курсов нет.");
+            return;
+        }
+
+        for (Course c : list) {
+            System.out.println(" - " + c);
+        }
     }
 
-    public QueryResults.SearchResult search(String query) {
+    public void search(String query) {
         List<Student> st = Calculations.searchStudents(query, state.students().values());
-        List<Course>  cs = Calculations.searchCourses(query, state.courses().values());
-        return new QueryResults.SearchResult(query, st, cs);
+        List<Course>  cs = Calculations.searchCourses(query,  state.courses().values());
+
+        System.out.println("Студенты:");
+        if (st.isEmpty()) System.out.println(" - не найдено");
+        else st.forEach(s -> System.out.println(" - " + s));
+
+        System.out.println("Курсы:");
+        if (cs.isEmpty()) System.out.println(" - не найдено");
+        else cs.forEach(c -> System.out.println(" - " + c));
     }
 
     // Search methods
