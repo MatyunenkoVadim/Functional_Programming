@@ -150,6 +150,7 @@ public class Registrar {
 
     public void loadFromJson(Path path) {
         Snapshot snap = new JsonStore().load(path);
+        snap = SnapshotNormalizer.normalize(snap);
 
         Map<UUID, Student> students = new LinkedHashMap<>();
         Map<UUID, Professor> professors = new LinkedHashMap<>();
@@ -172,7 +173,14 @@ public class Registrar {
         }
 
         for (var es : snap.enrollments) {
-            Grade g = es.grade == null ? null : Grade.valueOf(es.grade);
+            Grade g = null;
+            if (es.grade != null) {
+                try {
+                    g = Grade.valueOf(es.grade);
+                } catch (IllegalArgumentException ex) {
+                    throw new IllegalArgumentException("Invalid grade in JSON for enrollment " + es.id + ": " + es.grade);
+                }
+            }
             var e = new Enrollment(es.id, es.studentId, es.courseId, es.credits, g);
             enrollments.put(e.getId(), e);
         }
