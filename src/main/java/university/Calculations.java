@@ -2,7 +2,6 @@ package university;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class Calculations {
     private Calculations() {
@@ -119,24 +118,6 @@ public final class Calculations {
             if (s != null) out.add(s);
         }
         return out;
-    }
-
-    private static Map<UUID, Course> indexCourses(Collection<Course> courses) {
-        LinkedHashMap<UUID, Course> m = new LinkedHashMap<>();
-        for (Course c : courses) m.put(c.getId(), c);
-        return m;
-    }
-
-    private static Map<UUID, Enrollment> indexEnrollments(Collection<Enrollment> enrollments) {
-        LinkedHashMap<UUID, Enrollment> m = new LinkedHashMap<>();
-        for (Enrollment e : enrollments) m.put(e.getId(), e);
-        return m;
-    }
-
-    private static Map<UUID, Student> indexStudents(Collection<Student> students) {
-        LinkedHashMap<UUID, Student> m = new LinkedHashMap<>();
-        for (Student s : students) m.put(s.getId(), s);
-        return m;
     }
 
     public static <T> List<T> searchBy(String query, Collection<T> items, Function<T, String> text) {

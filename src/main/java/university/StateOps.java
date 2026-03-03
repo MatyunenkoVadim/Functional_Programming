@@ -16,32 +16,28 @@ public final class StateOps {
     public static State putStudent(State st, Student s) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(s, "student");
-        Map<UUID, Student> students = copy(st.studentsMap());
-        students.put(s.getId(), s);
+        var students = ImmutableOps.mapPut(st.studentsMap(), s.getId(), s);
         return st.withStudents(students);
     }
 
     public static State putProfessor(State st, Professor p) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(p, "professor");
-        Map<UUID, Professor> professors = copy(st.professorsMap());
-        professors.put(p.getId(), p);
+        var professors = ImmutableOps.mapPut(st.professorsMap(), p.getId(), p);
         return st.withProfessors(professors);
     }
 
     public static State putCourse(State st, Course c) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(c, "course");
-        Map<UUID, Course> courses = copy(st.coursesMap());
-        courses.put(c.getId(), c);
+        var courses = ImmutableOps.mapPut(st.coursesMap(), c.getId(), c);
         return st.withCourses(courses);
     }
 
     public static State putEnrollment(State st, Enrollment e) {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(e, "enrollment");
-        Map<UUID, Enrollment> enrollments = copy(st.enrollmentsMap());
-        enrollments.put(e.getId(), e);
+        var enrollments = ImmutableOps.mapPut(st.enrollmentsMap(), e.getId(), e);
         return st.withEnrollments(enrollments);
     }
 
@@ -97,8 +93,7 @@ public final class StateOps {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(enrollmentId, "enrollmentId");
 
-        Map<UUID, Enrollment> enrollments = copy(st.enrollmentsMap());
-        enrollments.remove(enrollmentId);
+        var enrollments = ImmutableOps.mapRemove(st.enrollmentsMap(), enrollmentId);
         return st.withEnrollments(enrollments);
     }
 
@@ -106,12 +101,7 @@ public final class StateOps {
         Objects.requireNonNull(st, "state");
         Objects.requireNonNull(courseId, "courseId");
 
-        Map<UUID, Course> courses = copy(st.coursesMap());
-        courses.remove(courseId);
+        var courses = ImmutableOps.mapRemove(st.coursesMap(), courseId);
         return st.withCourses(courses);
-    }
-
-    private static <K, V> LinkedHashMap<K, V> copy(Map<K, V> src) {
-        return new LinkedHashMap<>(src);
     }
 }

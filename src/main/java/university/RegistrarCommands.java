@@ -44,11 +44,11 @@ public final class RegistrarCommands {
         Course c = st.coursesMap().get(courseId);
         Enrollment e = new Enrollment(studentId, courseId, c.getCredits());
 
-        State next = st;
-        next = StateOps.putEnrollment(next, e);
-        next = StateOps.updateStudent(next, studentId, s -> s.withAddedEnrollment(e.getId()));
-        next = StateOps.updateCourse(next, courseId, crs -> crs.withAddedEnrollment(e.getId()));
-
+        State next = apply(st,
+                s -> StateOps.putEnrollment(s, e),
+                s -> StateOps.updateStudent(s, studentId, stt -> stt.withAddedEnrollment(e.getId())),
+                s -> StateOps.updateCourse(s, courseId, crs -> crs.withAddedEnrollment(e.getId()))
+        );
         return new Result<>(next, e);
     }
 
@@ -60,11 +60,11 @@ public final class RegistrarCommands {
         Enrollment e = findEnrollment(st, studentId, courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Запись не найдена"));
 
-        State next = st;
-        next = StateOps.removeEnrollment(next, e.getId());
-        next = StateOps.updateStudent(next, studentId, s -> s.withRemovedEnrollment(e.getId()));
-        next = StateOps.updateCourse(next, courseId, c -> c.withRemovedEnrollment(e.getId()));
-        return next;
+        return apply(st,
+                s -> StateOps.removeEnrollment(s, e.getId()),
+                s -> StateOps.updateStudent(s, studentId, stt -> stt.withRemovedEnrollment(e.getId())),
+                s -> StateOps.updateCourse(s, courseId, crs -> crs.withRemovedEnrollment(e.getId()))
+        );
     }
 
     public static State grade(State st, UUID studentId, UUID courseId, Grade grade) {
@@ -134,5 +134,10 @@ public final class RegistrarCommands {
         return st.enrollmentsMap().values().stream()
                 .filter(e -> e.getStudentId().equals(studentId) && e.getCourseId().equals(courseId))
                 .findFirst();
+    }
+
+    @SafeVarargs
+    private static State apply(State st, java.util.function.UnaryOperator<State>... steps) {
+        return ImmutableOps.pipe(steps).apply(st);
     }
 }
